@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>VideoDrop</title>
+  <style>
+    :root{
+      --bg:#000;
+      --fg:#fff;
+      --muted:#bdbdbd;
+      --line:#222;
+      --card:#0b0b0b;
+      --btn:#fff;
+      --btnfg:#000;
+      --radius:14px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:var(--bg); color:var(--fg);
+      font-family: Arial, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    header{
+      position:sticky; top:0; z-index:10;
+      border-bottom:1px solid var(--line);
+      background:rgba(0,0,0,.92);
+      backdrop-filter: blur(6px);
+    }
+    .wrap{max-width:980px;margin:0 auto;padding:14px 14px 40px}
+    .top{
+      display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    }
+    .brand{display:flex; align-items:baseline; gap:10px}
+    .brand b{letter-spacing:.4px}
+    .brand span{color:var(--muted); font-size:12px}
+    .tabs{display:flex; gap:8px; flex-wrap:wrap}
+    .btn{
+      border:1px solid var(--line);
+      background:transparent; color:var(--fg);
+      padding:9px 12px; border-radius:999px;
+      cursor:pointer; font-weight:700; font-size:12px;
+    }
+    .btn.primary{background:var(--btn); color:var(--btnfg); border-color:transparent}
+    .btn:disabled{opacity:.55; cursor:not-allowed}
+    .chip{
+      border:1px solid var(--line);
+      padding:8px 10px; border-radius:999px;
+      color:var(--muted); font-size:12px;
+    }
+    main{padding-top:14px}
+    .card{
+      border:1px solid var(--line);
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:14px;
+      margin-bottom:12px;
+    }
+    h2{margin:0 0 8px 0; font-size:14px; letter-spacing:.2px}
+    .muted{color:var(--muted); font-size:12px; line-height:1.45}
+    input, textarea{
+      width:100%;
+      background:#000;
+      border:1px solid var(--line);
+      color:var(--fg);
+      padding:10px 10px;
+      border-radius:12px;
+      outline:none;
+      font-size:14px;
+    }
+    textarea{min-height:90px; resize:vertical}
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .row > *{flex:1}
+    .row .fit{flex:0 0 auto}
+    .sep{height:1px;background:var(--line); margin:12px 0}
+    .video{
+      border:1px solid var(--line);
+      border-radius:14px;
+      overflow:hidden;
+      background:#000;
+    }
+    video{width:100%; height:auto; display:block; background:#000}
+    .vmeta{
+      display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+      padding:10px 10px; border-top:1px solid var(--line);
+      font-size:12px; color:var(--muted);
+    }
+    .vtitle{color:var(--fg); font-weight:800; font-size:13px; margin-bottom:4px}
+    .actions{display:flex; gap:8px; flex-wrap:wrap}
+    .linkbtn{
+      border:1px solid var(--line);
+      background:transparent;
+      color:var(--fg);
+      padding:8px 10px;
+      border-radius:999px;
+      cursor:pointer;
+      font-weight:800;
+      font-size:12px;
+    }
+    .linkbtn.on{background:#fff; color:#000; border-color:transparent}
+    .comment{
+      border-top:1px solid var(--line);
+      padding:10px 10px;
+      font-size:13px;
+    }
+    .comment b{font-size:12px}
+    .comment .t{margin-top:4px; color:#fff}
+    .comment .m{margin-top:6px; color:var(--muted); font-size:12px; display:flex; gap:8px; align-items:center}
+    .right{margin-left:auto}
+    .hide{display:none}
+    .error{color:#ffb3b3; font-size:12px}
+    .ok{color:#b8ffb8; font-size:12px}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap top">
+    <div class="brand">
+      <b>VideoDrop</b>
+      <span>чёрно-белый • аккаунты • лайки • комментарии</span>
+    </div>
+    <div class="tabs">
+      <button class="btn" id="tabFeed">Лента</button>
+      <button class="btn" id="tabUpload">Загрузка</button>
+      <button class="btn" id="tabAccount">Аккаунт</button>
+    </div>
+    <div class="chip" id="meChip">…</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="feed" class="card">
+    <div class="row" style="justify-content:space-between">
+      <div>
+        <h2>Лента</h2>
+        <div class="muted">Смотри видео, ставь ❤️ лайки и пиши 💬 комментарии.</div>
+      </div>
+      <div class="fit">
+        <button class="btn primary" id="refresh">Обновить</button>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div id="feedList" class="muted">Загрузка…</div>
+  </section>
+
+  <section id="upload" class="card hide">
+    <h2>Загрузка</h2>
+    <div class="muted">Только для авторизованных. Форматы: mp4/webm/mov/mkv/m4v.</div>
+    <div class="sep"></div>
+
+    <div id="uploadGate" class="muted">Проверь аккаунт…</div>
+
+    <form id="uploadForm" class="hide">
+      <div class="row">
+        <div>
+          <div class="muted">Название (необязательно)</div>
+          <input id="title" maxlength="80" placeholder="Например: моё видео" />
+        </div>
+      </div>
+      <div style="height:10px"></div>
+      <div class="row">
+        <div>
+          <input id="file" type="file" accept="video/*" required />
+        </div>
+        <div class="fit">
+          <button class="btn primary" id="doUpload" type="submit">Загрузить</button>
+        </div>
+      </div>
+      <div style="height:10px"></div>
+      <div id="uploadMsg" class="muted"></div>
+    </form>
+  </section>
+
+  <section id="account" class="card hide">
+    <h2>Аккаунт</h2>
+    <div class="muted">Регистрация/вход. Username: 3–20, латиница/цифры/._-</div>
+    <div class="sep"></div>
+
+    <div id="accountState" class="muted">…</div>
+
+    <div id="authForms" class="row">
+      <div class="card" style="margin:0; padding:12px">
+        <b style="font-size:13px">Вход</b>
+        <div style="height:10px"></div>
+        <input id="loginUser" placeholder="username" />
+        <div style="height:8px"></div>
+        <input id="loginPass" type="password" placeholder="password" />
+        <div style="height:10px"></div>
+        <button class="btn primary" id="loginBtn" type="button">Войти</button>
+        <div id="loginMsg" class="muted"></div>
+      </div>
+
+      <div class="card" style="margin:0; padding:12px">
+        <b style="font-size:13px">Регистрация</b>
+        <div style="height:10px"></div>
+        <input id="regUser" placeholder="username" />
+        <div style="height:8px"></div>
+        <input id="regPass" type="password" placeholder="password (мин 6)" />
+        <div style="height:10px"></div>
+        <button class="btn primary" id="regBtn" type="button">Создать</button>
+        <div id="regMsg" class="muted"></div>
+      </div>
+    </div>
+
+    <div style="height:12px"></div>
+    <button class="btn" id="logoutBtn" type="button">Выйти</button>
+  </section>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  const sections = { feed: $("feed"), upload: $("upload"), account: $("account") };
+  const meChip = $("meChip");
+
+  function show(name){
+    for (const k of Object.keys(sections)) sections[k].classList.toggle("hide", k !== name);
+  }
+  $("tabFeed").onclick = () => { show("feed"); loadFeed(); };
+  $("tabUpload").onclick = () => { show("upload"); refreshMe(true); };
+  $("tabAccount").onclick = () => { show("account"); refreshMe(true); };
+
+  function fmtTime(ts){
+    const d = new Date(ts);
+    const pad = (n)=> String(n).padStart(2,"0");
+    return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  let ME = null;
+
+  async function api(path, opts={}){
+    const r = await fetch(path, {
+      credentials: "same-origin",
+      headers: opts.body instanceof FormData ? undefined : { "Content-Type":"application/json" },
+      ...opts,
+      body: opts.body instanceof FormData ? opts.body : (opts.body ? JSON.stringify(opts.body) : undefined)
+    });
+    const ct = r.headers.get("content-type") || "";
+    const data = ct.includes("application/json") ? await r.json() : await r.text();
+    if (!r.ok) {
+      const msg = (data && data.error) ? data.error : "Ошибка";
+      throw new Error(msg);
+    }
+    return data;
+  }
+
+  async function refreshMe(updateGates=false){
+    const data = await api("/api/me");
+    ME = data.user;
+    meChip.textContent = ME ? `👤 ${ME.username}` : "Гость";
+    $("accountState").textContent = ME ? `Вы вошли как ${ME.username}` : "Вы не вошли";
+    $("logoutBtn").style.display = ME ? "inline-flex" : "none";
+
+    if (updateGates){
+      const gate = $("uploadGate");
+      const form = $("uploadForm");
+      if (ME){
+        gate.textContent = "";
+        form.classList.remove("hide");
+        gate.classList.add("hide");
+      } else {
+        gate.innerHTML = `Нужно войти. Открой вкладку «Аккаунт».`;
+        gate.classList.remove("hide");
+        form.classList.add("hide");
+      }
+    }
+    return ME;
+  }
+
+  // Auth
+  $("loginBtn").onclick = async () => {
+    $("loginMsg").textContent = "";
+    try{
+      await api("/api/login", { method:"POST", body:{ username: $("loginUser").value, password: $("loginPass").value } });
+      $("loginMsg").innerHTML = `<span class="ok">Готово</span>`;
+      await refreshMe(true);
+      loadFeed();
+    }catch(e){
+      $("loginMsg").innerHTML = `<span class="error">${e.message}</span>`;
+    }
+  };
+
+  $("regBtn").onclick = async () => {
+    $("regMsg").textContent = "";
+    try{
+      await api("/api/register", { method:"POST", body:{ username: $("regUser").value, password: $("regPass").value } });
+      $("regMsg").innerHTML = `<span class="ok">Аккаунт создан</span>`;
+      await refreshMe(true);
+      loadFeed();
+    }catch(e){
+      $("regMsg").innerHTML = `<span class="error">${e.message}</span>`;
+    }
+  };
+
+  $("logoutBtn").onclick = async () => {
+    await api("/api/logout", { method:"POST" });
+    await refreshMe(true);
+    loadFeed();
+  };
+
+  // Upload
+  $("uploadForm").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    $("uploadMsg").textContent = "";
+    const f = $("file").files && $("file").files[0];
+    if (!f) return;
+
+    const fd = new FormData();
+    fd.append("title", $("title").value || "");
+    fd.append("video", f);
+
+    const btn = $("doUpload");
+    btn.disabled = true;
+    $("uploadMsg").textContent = "Загрузка…";
+    try{
+      await api("/api/upload", { method:"POST", body: fd });
+      $("uploadMsg").innerHTML = `<span class="ok">Видео загружено</span>`;
+      $("title").value = "";
+      $("file").value = "";
+      loadFeed();
+      show("feed");
+    }catch(e){
+      $("uploadMsg").innerHTML = `<span class="error">${e.message}</span>`;
+    }finally{
+      btn.disabled = false;
+    }
+  });
+
+  // Feed
+  $("refresh").onclick = loadFeed;
+
+  async function toggleLike(videoId, liked){
+    if (!ME){
+      alert("Нужно войти, чтобы ставить лайки");
+      show("account");
+      return;
+    }
+    try{
+      if (liked){
+        await api(`/api/videos/${videoId}/like`, { method:"DELETE" });
+      } else {
+        await api(`/api/videos/${videoId}/like`, { method:"POST" });
+      }
+      loadFeed();
+    }catch(e){
+      alert(e.message);
+    }
+  }
+
+  async function loadComments(videoId, holder){
+    holder.innerHTML = `<div class="muted">Загрузка комментариев…</div>`;
+    try{
+      const data = await api(`/api/videos/${videoId}/comments`);
+      const list = document.createElement("div");
+      for (const c of data.comments){
+        const row = document.createElement("div");
+        row.className = "comment";
+        row.innerHTML = `
+          <b>${c.username}</b>
+          <div class="t"></div>
+          <div class="m">
+            <span>${fmtTime(c.created_at)}</span>
+            ${c.mine ? `<button class="linkbtn right" data-del="${c.id}">Удалить</button>` : ``}
+          </div>
+        `;
+        row.querySelector(".t").textContent = c.text;
+        list.appendChild(row);
+      }
+
+      // form
+      const form = document.createElement("div");
+      form.className = "comment";
+      form.innerHTML = `
+        <div class="muted">Написать комментарий</div>
+        <div style="height:8px"></div>
+        <textarea maxlength="500" placeholder="Текст…"></textarea>
+        <div style="height:8px"></div>
+        <div class="row">
+          <div class="muted" style="flex:1"> </div>
+          <div class="fit"><button class="linkbtn on">Отправить</button></div>
+        </div>
+        <div class="muted" style="margin-top:8px" data-msg=""></div>
+      `;
+
+      const ta = form.querySelector("textarea");
+      const sendBtn = form.querySelector("button");
+      const msg = form.querySelector('[data-msg]');
+
+      sendBtn.onclick = async () => {
+        if (!ME){
+          alert("Нужно войти, чтобы комментировать");
+          show("account");
+          return;
+        }
+        const text = (ta.value || "").trim();
+        if (!text) return;
+        sendBtn.disabled = true;
+        msg.textContent = "Отправка…";
+        try{
+          await api(`/api/videos/${videoId}/comments`, { method:"POST", body:{ text } });
+          msg.innerHTML = `<span class="ok">Готово</span>`;
+          await loadComments(videoId, holder);
+        }catch(e){
+          msg.innerHTML = `<span class="error">${e.message}</span>`;
+        }finally{
+          sendBtn.disabled = false;
+        }
+      };
+
+      holder.innerHTML = "";
+      holder.appendChild(list);
+      holder.appendChild(form);
+
+      holder.querySelectorAll("[data-del]").forEach(btn => {
+        btn.onclick = async () => {
+          const id = btn.getAttribute("data-del");
+          if (!confirm("Удалить комментарий?")) return;
+          try{
+            await api(`/api/comments/${id}`, { method:"DELETE" });
+            await loadComments(videoId, holder);
+          }catch(e){
+            alert(e.message);
+          }
+        };
+      });
+    }catch(e){
+      holder.innerHTML = `<div class="error">${e.message}</div>`;
+    }
+  }
+
+  async function loadFeed(){
+    $("feedList").textContent = "Загрузка…";
+    try{
+      const data = await api("/api/videos");
+      const videos = data.videos || [];
+      if (!videos.length){
+        $("feedList").innerHTML = `<div class="muted">Пока нет видео. Зайди в «Загрузка» и добавь первое.</div>`;
+        return;
+      }
+      const frag = document.createDocumentFragment();
+      for (const v of videos){
+        const card = document.createElement("div");
+        card.className = "video";
+        const liked = !!v.liked_by_me;
+
+        card.innerHTML = `
+          <video controls preload="metadata" src="${v.url}"></video>
+          <div class="vmeta">
+            <div>
+              <div class="vtitle"></div>
+              <div>👤 ${v.owner} • ${fmtTime(v.created_at)}</div>
+            </div>
+            <div class="actions">
+              <button class="linkbtn ${liked ? "on" : ""}" data-like="${v.id}">❤️ ${v.like_count}</button>
+              <button class="linkbtn" data-com="${v.id}">💬 ${v.comment_count}</button>
+              <a class="linkbtn" href="${v.url}" target="_blank" rel="noopener">Открыть</a>
+            </div>
+          </div>
+          <div class="comments hide" data-holder="${v.id}"></div>
+        `;
+        card.querySelector(".vtitle").textContent = v.title;
+
+        card.querySelector(`[data-like="${v.id}"]`).onclick = () => toggleLike(v.id, liked);
+
+        card.querySelector(`[data-com="${v.id}"]`).onclick = async () => {
+          const holder = card.querySelector(`[data-holder="${v.id}"]`);
+          holder.classList.toggle("hide");
+          if (!holder.classList.contains("hide")){
+            await loadComments(v.id, holder);
+          }
+        };
+
+        frag.appendChild(card);
+        frag.appendChild(document.createElement("div")).style.height="12px";
+      }
+      $("feedList").innerHTML = "";
+      $("feedList").appendChild(frag);
+    }catch(e){
+      $("feedList").innerHTML = `<div class="error">${e.message}</div>`;
+    }
+  }
+
+  (async function init(){
+    await refreshMe(true);
+    await loadFeed();
+    show("feed");
+  })();
+</script>
+</body>
+</html>
