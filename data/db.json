@@ -1,0 +1,24 @@
+{
+  "nextUserId": 2,
+  "nextVideoId": 2,
+  "nextCommentId": 1,
+  "users": [
+    {
+      "id": 1,
+      "username": "Admin",
+      "password_hash": "$2a$10$WsOx5nd8MLtVw6Dk.Oqcb.HpbSDjP6LP8VghWEueFYqu4emjnyrVm",
+      "created_at": 1772627692173
+    }
+  ],
+  "videos": [
+    {
+      "id": 1,
+      "owner_user_id": 1,
+      "title": "66",
+      "filename": "1772627709191_IMG_8229.MOV",
+      "created_at": 1772627709205
+    }
+  ],
+  "likes": [],
+  "comments": []
+}
