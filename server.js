@@ -253,6 +253,6 @@ app.delete("/api/comments/:id", requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
-app.listen(PORT, () => {
-  console.log(`VideoDrop Social (no native deps): http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`VideoDrop Social (no native deps): listening on ${PORT}`);
 });
